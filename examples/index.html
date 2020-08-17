@@ -7,25 +7,38 @@
 	</head>
 	<body>
 		<div>TODO write content</div>
-		
-		<script src='../src/Runnable.js'></script>
+		<button id="btn">get current value</button>
 		<script src='../src/Thread.js'></script>
 		<script>
 			
-			var thread = new Thread(function(done){
-				console.log("Thread Started");
+			var thread = new Thread(function(ffname){
+				console.log("Thread Started", ffname);
 				
+				var Pi=0, n=1, iterations = 0;
 				setInterval(()=>{
-					console.log("Thread is running");
-				}, 1000);
+					Pi += (4/n)-(4/(n+2));
+					n=n+4;
+					iterations++;
+				}, 10);
 				
 				setTimeout(()=>{
-					console.log("Thread timed out");
-					done();
+					console.log(`pi ~= ${Pi}`);
+					console.log(`That took ${iterations} iterations`);
+					this.done();
 				}, 30000);
+				
+				this.onmessage = (name) => {
+					console.log('hi, ', name, 'current pi is ', Pi);
+				};
+				
 			});
 			
+			thread.setParams('bob');
 			thread.run();
+			
+			document.getElementById('btn').addEventListener('click',(e)=>{
+				thread.postmessage('bobbert');
+			});
 			
 		</script>
 		
