@@ -92,7 +92,7 @@ class Thread {
 	}
 	
 	abort(){
-		_this.worker.terminate();
+		this._worker.terminate();
 		this.running = false;
 		return this;
 	}

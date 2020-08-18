@@ -1,45 +1,117 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>TODO supply a title</title>
+		<title>Generate Pi</title>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<style>
+			.container {
+				width: 500px; margin: 1em auto;
+			}
+			#stop{
+				display:none
+			}
+			#output{
+				overflow-wrap: break-word;
+				max-height: 10em;
+				overflow: scroll;
+				font-family: Monospace;
+			}
+		</style>
 	</head>
 	<body>
-		<div>TODO write content</div>
-		<button id="btn">get current value</button>
+		<div class="container">
+			<h3>Calculate Pi</h3>
+			<p>This page demonstrates how running a long running synchronous task (calculating Pi using a <a href='https://rosettacode.org/wiki/Pi#JavaScript' target='_blank'>Spigot Algorithm</a>) on it's own thread does not block the UI or the event loop on the main thread.</p>
+			<p>Press <i>Start</i> to start the thread. Press <i>Get Pi</i> To request the currently calculated value of Pi from the thread. Press <i>Stop</i> to abort and close the thread.</p>
+			<button id="start">Start</button>
+			<button id="stop">Stop</button>
+			<button id="get">Get Pi</button>
+			<span id="digits">0</span> Digits Generated | 
+			<span id="timer">00:00:00,000</span> Elapsed
+			<hr>
+			<div id="output"></div>
+			
+		</div>
 		<script src='../src/Thread.js'></script>
 		<script>
+			var start_btn = document.getElementById('start');
+			var stop_btn = document.getElementById('stop');
+			var get_btn = document.getElementById('get');			
+			var output = document.getElementById('output');
+			var digits = document.getElementById('digits');
+			var timer_span = document.getElementById('timer');
+			var start_time, timer;
 			
-			var thread = new Thread(function(ffname){
-				console.log("Thread Started", ffname);
-				
-				var Pi=0, n=1, iterations = 0;
-				setInterval(()=>{
-					Pi += (4/n)-(4/(n+2));
-					n=n+4;
-					iterations++;
+			var thread = new Thread(function(){
+				function spigotPi() {
+					let q = 1n, r = 180n, t = 60n, i = 2n;
+					return () => {
+						let y = (q * (27n * i - 12n) + 5n * r) / (5n * t);
+						let u = 3n * (3n * i + 1n) * (3n * i + 2n);
+						r = 10n * u * (q * (5n * i - 2n) + r - y * t);
+						q = 10n * q * i * (2n * i - 1n);
+						t = t * u;
+						i = i + 1n;
+						let output = y.toString();
+						if (i === 3n) output += '.';
+						return output;
+					};
+				}
+				var Pi = "";
+				var getNextDigit = spigotPi();
+				(function mainLoop(){
+					Pi += getNextDigit();
+					setInterval(mainLoop, 250);
+				})();
+				this.onmessage = ()=>{
+					this.postmessage(Pi);
+				}
+			});
+			
+			thread.onmessage = function(Pi){
+				output.innerHTML = Pi;
+				digits.innerHTML = Pi.length;
+				get_btn.removeAttribute('disabled');
+				get_btn.innerHTML = "Get Pi";
+			};
+			
+			start_btn.addEventListener('click', function(e){
+				e.preventDefault();
+				start_time = new Date();
+				this.style.display = 'none';
+				stop_btn.style.display = 'inline';
+				thread.run();
+				timer = setInterval(()=>{
+					var timeInSeconds = ((new Date()).getTime() - start_time.getTime()) / 1000;
+					timer_span .innerHTML = parseElapsedTime(timeInSeconds);
 				}, 10);
-				
-				setTimeout(()=>{
-					console.log(`pi ~= ${Pi}`);
-					console.log(`That took ${iterations} iterations`);
-					this.done();
-				}, 30000);
-				
-				this.onmessage = (name) => {
-					console.log('hi, ', name, 'current pi is ', Pi);
-				};
-				
 			});
 			
-			thread.setParams('bob');
-			thread.run();
-			
-			document.getElementById('btn').addEventListener('click',(e)=>{
-				thread.postmessage('bobbert');
+			get_btn.addEventListener('click', function(e){
+				this.setAttribute('disabled', 'disabled');
+				this.innerHTML = "Waiting for thread...";
+				thread.postmessage();
+				output.scrollTop = output.scrollHeight;
 			});
 			
+			stop_btn.addEventListener('click', function(e){
+				e.preventDefault();
+				thread.abort();
+				clearInterval(timer);
+				get_btn.style.display = "none";
+				stop_btn.style.display = "none";
+			});
+			
+			function parseElapsedTime(timeInSeconds) {
+				var pad = function(num, size) { return ('000' + num).slice(size * -1); },
+				time = parseFloat(timeInSeconds).toFixed(3),
+				hours = Math.floor(time / 60 / 60),
+				minutes = Math.floor(time / 60) % 60,
+				seconds = Math.floor(time - minutes * 60),
+				milliseconds = time.slice(-3);
+				return pad(hours, 2) + ':' + pad(minutes, 2) + ':' + pad(seconds, 2) + ',' + pad(milliseconds, 3);
+			}
 		</script>
 		
 	</body>
