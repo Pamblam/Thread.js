@@ -19,7 +19,7 @@ Simple, disposable threading for the browser.
  - `thread.setParams(...params)` - This must be called before the thread is executed. Values passed to this method are initially passed into the thread function as well. The `threadFunct` must have the same number of parameters that are passed into this function.
  - `thread.run()` - Begin execution of the thread. Nothing happens until this is called. 
  
- #### threadFunct
+#### threadFunct
  
 There are a couple methods available inside the `threadFunct` as well:
 
@@ -28,3 +28,6 @@ There are a couple methods available inside the `threadFunct` as well:
  - `this.done(...params)` - Completes the execution of the thread. Optionally sends a value back to the main thread, which the main thread can handle via it's `thread.done()` method. Destroys the thread.
 
 
+#### Examples
+
+ - [Generate Pi](https://pamblam.github.io/Thread.js/examples)
